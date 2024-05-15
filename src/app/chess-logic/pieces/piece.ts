@@ -5,7 +5,7 @@ export abstract class Piece {
   protected abstract _directions: Coords[];
 
   constructor(
-    private color: Color,
+    public color: Color,
   ) {
   }
 
@@ -15,9 +15,5 @@ export abstract class Piece {
 
   public get directions(): Coords[] {
     return this._directions;
-  }
-
-  public getColor(): Color {
-    return this.color;
   }
 }
