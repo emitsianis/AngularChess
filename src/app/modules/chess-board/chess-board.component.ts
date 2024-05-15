@@ -1,6 +1,7 @@
 import { Component } from '@angular/core';
 import { ChessBoard } from '../../chess-logic/chess-board';
 import { CommonModule } from '@angular/common';
+import { pieceImagePath } from '../../chess-logic/models';
 
 @Component({
   selector: 'app-chess-board',
@@ -12,6 +13,7 @@ import { CommonModule } from '@angular/common';
 export class ChessBoardComponent {
   private chessBoard = new ChessBoard();
   public chessBoardView = this.chessBoard.chessBoardView;
+  public pieceImagePath = pieceImagePath;
 
   public get currentPlayer() {
     return this.chessBoard.playerColor;
