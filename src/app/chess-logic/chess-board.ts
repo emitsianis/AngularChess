@@ -54,7 +54,7 @@ export class ChessBoard {
   }
 
   public static isSquareDark(x: number, y: number): boolean {
-    return x % 2 === 0 && y % 2 === 0 || x % 2 === 1 && y % 2 === 1;
+    return (x + y) % 2 === 1;
   }
 
   private areCoordsValid(x: number, y: number): boolean {
@@ -137,14 +137,12 @@ export class ChessBoard {
 
           // need to restrict pawn moves in certain directions
           if (piece instanceof Pawn) {
-            console.log('1');
             // cant move pawn two squares straight if there is piece in front of it
             if (dx === 2 || dx === -2) {
               if (newPiece) continue;
               if (this.chessBoard[newX + (dx === 2 ? -1 : 1)][newY]) continue;
             }
 
-            console.log('2');
             // cant move pawn one square straight if piece is in front of it
             if ((dx === 1 || dx === -1) && dy === 0 && newPiece) continue;
 

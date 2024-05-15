@@ -1,7 +1,7 @@
 import { Component } from '@angular/core';
 import { ChessBoard } from '../../chess-logic/chess-board';
 import { CommonModule } from '@angular/common';
-import { Coords, FENChar, pieceImagePath } from '../../chess-logic/models';
+import { Coords, pieceImagePath } from '../../chess-logic/models'; // Removed unused FENChar import
 import { SelectedSquare } from './models';
 
 @Component({
@@ -9,7 +9,7 @@ import { SelectedSquare } from './models';
   standalone: true,
   imports: [CommonModule],
   templateUrl: './chess-board.component.html',
-  styleUrls: ['./chess-board.component.scss'], // Corrected to styleUrls
+  styleUrls: ['./chess-board.component.scss'],
 })
 export class ChessBoardComponent {
   private chessBoard = new ChessBoard();
@@ -31,8 +31,7 @@ export class ChessBoardComponent {
   }
 
   public isSquareSelected(x: number, y: number): boolean {
-    if (!this.selectedSquare.piece) return false;
-    return this.selectedSquare.x === x && this.selectedSquare.y === y;
+    return !!this.selectedSquare.piece && this.selectedSquare.x === x && this.selectedSquare.y === y;
   }
 
   public isSquareSafeForSelectedPiece(x: number, y: number): boolean {
@@ -40,10 +39,10 @@ export class ChessBoardComponent {
   }
 
   public selectingPiece(x: number, y: number): void {
-    const piece: FENChar | null = this.chessBoardView[x][y];
+    const piece = this.chessBoardView[x][y];
     if (!piece) return;
 
     this.selectedSquare = { piece, x, y };
-    this.pieceSafeSquares = this.safeSquares.get(x + "," + y) || [];
+    this.pieceSafeSquares = this.safeSquares.get(`${x},${y}`) || [];
   }
 }
