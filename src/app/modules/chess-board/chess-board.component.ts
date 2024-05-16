@@ -17,6 +17,8 @@ export class ChessBoardComponent {
   public pieceImagePath = pieceImagePath;
   private selectedSquare: SelectedSquare = { piece: null };
   private pieceSafeSquares: Coords[] = [];
+  private lastMove = this.chessBoard.lastMove;
+  private checkState = this.chessBoard.checkState;
 
   public get playerColor(): Color {
     return this.chessBoard.playerColor;
@@ -47,6 +49,12 @@ export class ChessBoardComponent {
     if (!piece) return;
     if (this.isWrongPieceSelected(piece)) return;
 
+    const isSameSquareClicked = this.selectedSquare.piece && this.selectedSquare.x === x && this.selectedSquare.y === y;
+    if (isSameSquareClicked) {
+      this.unmarkSquares();
+      return;
+    }
+
     this.selectedSquare = { piece, x, y };
     this.pieceSafeSquares = this.safeSquares.get(`${x},${y}`) || [];
   }
@@ -56,13 +64,33 @@ export class ChessBoardComponent {
     this.placingPiece(x, y);
   }
 
+  public isSquareLastMove(x: number, y: number): boolean {
+    if (!this.lastMove) return false;
+
+    const { prevX, prevY, currX, currY } = this.lastMove;
+    return prevX === x && prevY === y || currX === x && currY === y;
+  }
+
+  public isSquareChecked(x: number, y: number): boolean {
+    return this.checkState.isInCheck && this.checkState.x === x && this.checkState.y === y;
+  }
+
+  private unmarkSquares(): void {
+    this.selectedSquare = { piece: null };
+    this.pieceSafeSquares = [];
+  }
+
   private placingPiece(newX: number, newY: number): void {
     if (!this.selectedSquare.piece) return;
     if (!this.isSquareSafeForSelectedPiece(newX, newY)) return;
 
-    const {x: prevX, y: prevY} = this.selectedSquare;
+    const { x: prevX, y: prevY } = this.selectedSquare;
     this.chessBoard.move(prevX, prevY, newX, newY);
+    this.checkState = this.chessBoard.checkState;
+    this.lastMove = this.chessBoard.lastMove;
     this.chessBoardView = this.chessBoard.chessBoardView;
+
+    this.unmarkSquares();
   }
 
   private isWrongPieceSelected(piece: FENChar): boolean {

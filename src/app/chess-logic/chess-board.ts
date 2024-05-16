@@ -1,4 +1,4 @@
-import { Color, Coords, FENChar, SafeSquares } from "./models";
+import { CheckState, Color, Coords, FENChar, LastMove, SafeSquares } from "./models";
 import { Bishop } from "./pieces/bishop";
 import { King } from "./pieces/king";
 import { Knight } from "./pieces/knight";
@@ -12,6 +12,8 @@ export class ChessBoard {
   private readonly chessBoardSize: number = 8;
   private _playerColor = Color.White;
   private _safeSquares: SafeSquares;
+  private _lastMove: LastMove | undefined;
+  private _checkState: CheckState = { isInCheck: false };
 
   constructor() {
     this.chessBoard = [
@@ -53,6 +55,14 @@ export class ChessBoard {
     return this._safeSquares;
   }
 
+  public get lastMove(): LastMove | undefined {
+    return this._lastMove;
+  }
+
+  public get checkState(): CheckState {
+    return this._checkState;
+  }
+
   public static isSquareDark(x: number, y: number): boolean {
     return (x + y) % 2 === 1;
   }
@@ -75,10 +85,17 @@ export class ChessBoard {
 
           if (piece instanceof Pawn || piece instanceof Knight || piece instanceof King) {
             if (piece instanceof Pawn && dy === 0) continue;
+
+            const attackedPiece = this.chessBoard[newX][newY];
+            if (attackedPiece instanceof King && attackedPiece.color === playerColor) {
+              if (checkingCurrentPosition) this._checkState = { isInCheck: true, x: newX, y: newY };
+              return true;
+            }
           } else {
             while (this.areCoordsValid(newX, newY)) {
               const attackedPiece = this.chessBoard[newX][newY];
               if (attackedPiece instanceof King && attackedPiece.color === playerColor) {
+                if (checkingCurrentPosition) this._checkState = { isInCheck: true, x: newX, y: newY };
                 return true;
               }
 
@@ -92,6 +109,7 @@ export class ChessBoard {
       }
     }
 
+    if (checkingCurrentPosition) this._checkState = { isInCheck: false };
     return false;
   }
 
@@ -190,7 +208,9 @@ export class ChessBoard {
     this.chessBoard[prevX][prevY] = null;
     this.chessBoard[newX][newY] = piece;
 
+    this._lastMove = { prevX, prevY, currX: newX, currY: newY, piece };
     this._playerColor = this.playerColor === Color.White ? Color.Black : Color.White;
+    this.isInCheck(this.playerColor, true);
     this._safeSquares = this.findSafeSquares();
   };
 }
