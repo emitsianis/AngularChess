@@ -208,6 +208,8 @@ export class ChessBoard {
         if (piece instanceof King) {
           if (this.canCastle(piece, true)) pieceSafeSquares.push({ x, y: 6 });
           if (this.canCastle(piece, false)) pieceSafeSquares.push({ x, y: 2 });
+        } else if (piece instanceof Pawn && this.canCaptureEnPassant(piece, x, y)) {
+          pieceSafeSquares.push({ x: x + (piece.color === Color.White ? 1 : -1), y: this.lastMove!.currY });
         }
 
         if (pieceSafeSquares.length)
@@ -241,6 +243,28 @@ export class ChessBoard {
       && this.isPositionSafeAfterMove(king, kingPositionX, kingPositionY, kingPositionX, secondNextKingPositionY);
   }
 
+  private canCaptureEnPassant(pawn: Pawn, pawnX: number, pawnY: number): boolean {
+    if (!this.lastMove) return false;
+
+    const { prevX, prevY, currX, currY, piece } = this.lastMove;
+    if (
+      !(piece instanceof Pawn)
+      || pawn.color !== this.playerColor
+      || Math.abs(currX - prevX) !== 2
+      || pawnX !== currX
+      || Math.abs(pawnY - currY) !== 1
+    ) return false;
+
+    const pawnNewPositionX = pawnX + (pawn.color === Color.White ? 1 : -1);
+    const pawnNewPositionY = currY;
+
+    this.chessBoard[currX][currY] = null;
+    const isPositionSafe = this.isPositionSafeAfterMove(pawn, pawnX, pawnY, pawnNewPositionX, pawnNewPositionY);
+    this.chessBoard[currX][currY] = piece;
+
+    return isPositionSafe;
+  }
+
   private handlingSpecialMoves(piece: Piece, prevX: number, prevY: number, newX: number, newY: number): void {
     if (piece instanceof King && Math.abs(prevY - newY) === 2) {
       const isKingSideCastle = newY > prevY;
@@ -254,6 +278,15 @@ export class ChessBoard {
       this.chessBoard[rookPositionX][rookPositionY] = null;
       this.chessBoard[rookPositionX][rookNewPositionY] = rook;
       rook.hasMoved = true;
+    } else if (
+      piece instanceof Pawn
+      && this.lastMove
+      && this.lastMove.piece instanceof Pawn
+      && Math.abs(this.lastMove.currX - this.lastMove.prevX) === 2
+      && prevX === this.lastMove.currX
+      && newY === this.lastMove.currY
+    ) {
+      this.chessBoard[this.lastMove.currX][this.lastMove.currY] = null;
     }
   }
 }
