@@ -1,8 +1,8 @@
 import { Piece } from './pieces/piece';
 
 export enum Color {
-  White,
-  Black,
+  White = 'White',
+  Black = 'Black',
 }
 
 export type Coords = {
