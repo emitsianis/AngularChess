@@ -31,6 +31,10 @@ export class ChessBoardComponent {
     return this.chessBoard.playerColor;
   }
 
+  public get gameOverMessage(): string | undefined {
+    return this.chessBoard.gameOverMessage;
+  }
+
   public get safeSquares() {
     return this.chessBoard.safeSquares;
   }
@@ -91,6 +95,8 @@ export class ChessBoardComponent {
   }
 
   private selectingPiece(x: number, y: number): void {
+    if (this.gameOverMessage !== undefined) return;
+
     const piece = this.chessBoardView[x][y];
     if (!piece) return;
     if (this.isWrongPieceSelected(piece)) return;

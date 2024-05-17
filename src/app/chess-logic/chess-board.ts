@@ -6,6 +6,7 @@ import { Pawn } from "./pieces/pawn";
 import { Piece } from "./pieces/piece";
 import { Queen } from "./pieces/queen";
 import { Rook } from "./pieces/rook";
+import { FENConverter } from './FENConverter';
 
 export class ChessBoard {
   private chessBoard: (Piece | null)[][];
@@ -17,6 +18,11 @@ export class ChessBoard {
   private _isGameOver = false;
   private _gameOverMessage: string | undefined;
   private fiftyMoveRuleCounter = 0;
+  private fullNumberOfMovesCounter = 1;
+  private threeFoldRePetitionDictionary = new Map<string, number>();
+  private threeFoldRepetitionFlag = false;
+  private _boardAsFEN: string = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
+  private FENConverter = new FENConverter();
 
   constructor() {
     this.chessBoard = [
@@ -74,6 +80,10 @@ export class ChessBoard {
     return this._gameOverMessage;
   }
 
+  public get boardAsFEN(): string {
+    return this._boardAsFEN;
+  }
+
   public static isSquareDark(x: number, y: number): boolean {
     return (x + y) % 2 === 1;
   }
@@ -121,6 +131,8 @@ export class ChessBoard {
   }
 
   public move(prevX: number, prevY: number, newX: number, newY: number, promotedPieceType: FENChar | null): void {
+    if (this.isGameOver) throw new Error("Game is over");
+
     if (!this.areCoordsValid(prevX, prevY) || !this.areCoordsValid(newX, newY)) return;
 
     const piece = this.chessBoard[prevX][prevY];
@@ -155,6 +167,12 @@ export class ChessBoard {
     this._playerColor = this.playerColor === Color.White ? Color.Black : Color.White;
     this.isInCheck(this.playerColor, true);
     this._safeSquares = this.findSafeSquares();
+
+    if (this.playerColor === Color.White) this.fullNumberOfMovesCounter++;
+
+    this._boardAsFEN = this.FENConverter.convertBoardToFEN(this.chessBoard, this.playerColor, this.lastMove, this.fiftyMoveRuleCounter, this.fullNumberOfMovesCounter);
+    this.updateThreeFoldRepetitionDictionary(this.boardAsFEN);
+
     this._isGameOver = this.isGameFinished();
   };
 
@@ -343,6 +361,11 @@ export class ChessBoard {
       return true;
     }
 
+    if (this.threeFoldRepetitionFlag) {
+      this._gameOverMessage = "Draw by threefold repetition";
+      return true;
+    }
+
     if (this.fiftyMoveRuleCounter >= 50) {
       this._gameOverMessage = "Draw by fifty-move rule";
       return true;
@@ -405,5 +428,20 @@ export class ChessBoard {
     ) return true;
 
     return false;
+  }
+
+  private updateThreeFoldRepetitionDictionary(FEN: string): void {
+    const threeFoldRepetitionFENKey = FEN.split(" ").slice(0, 4).join("");
+    const threeFoldRepetitionValue = this.threeFoldRePetitionDictionary.get(threeFoldRepetitionFENKey);
+
+    if (!threeFoldRepetitionValue) {
+      this.threeFoldRePetitionDictionary.set(threeFoldRepetitionFENKey, 1);
+    } else {
+      if (threeFoldRepetitionValue === 2) {
+        this.threeFoldRepetitionFlag = true;
+        return;
+      }
+      this.threeFoldRePetitionDictionary.set(threeFoldRepetitionFENKey, 2);
+    }
   }
 }
