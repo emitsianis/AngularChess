@@ -113,7 +113,7 @@ export class ChessBoard {
     return false;
   }
 
-  public move(prevX: number, prevY: number, newX: number, newY: number): void {
+  public move(prevX: number, prevY: number, newX: number, newY: number, promotedPieceType: FENChar | null): void {
     if (!this.areCoordsValid(prevX, prevY) || !this.areCoordsValid(newX, newY)) return;
 
     const piece = this.chessBoard[prevX][prevY];
@@ -128,8 +128,13 @@ export class ChessBoard {
 
     this.handlingSpecialMoves(piece, prevX, prevY, newX, newY);
 
+    if (promotedPieceType) {
+      this.chessBoard[newX][newY] = this.promotedPiece(promotedPieceType);
+    } else {
+      this.chessBoard[newX][newY] = piece;
+    }
+
     this.chessBoard[prevX][prevY] = null;
-    this.chessBoard[newX][newY] = piece;
 
     this._lastMove = { prevX, prevY, currX: newX, currY: newY, piece };
     this._playerColor = this.playerColor === Color.White ? Color.Black : Color.White;
@@ -137,7 +142,10 @@ export class ChessBoard {
     this._safeSquares = this.findSafeSquares();
   };
 
-  private isPositionSafeAfterMove(piece: Piece, prevX: number, prevY: number, newX: number, newY: number): boolean {
+  private  isPositionSafeAfterMove(prevX: number, prevY: number, newX: number, newY: number): boolean {
+    const piece = this.chessBoard[prevX][prevY];
+    if (!piece) return false;
+
     const newPiece = this.chessBoard[newX][newY];
     if (newPiece && newPiece.color === piece.color) return false;
 
@@ -187,14 +195,14 @@ export class ChessBoard {
           }
 
           if (piece instanceof Pawn || piece instanceof Knight || piece instanceof King) {
-            if (this.isPositionSafeAfterMove(piece, x, y, newX, newY))
+            if (this.isPositionSafeAfterMove(x, y, newX, newY))
               pieceSafeSquares.push({ x: newX, y: newY });
           } else {
             while (this.areCoordsValid(newX, newY)) {
               newPiece = this.chessBoard[newX][newY];
               if (newPiece && newPiece.color === piece.color) break;
 
-              if (this.isPositionSafeAfterMove(piece, x, y, newX, newY))
+              if (this.isPositionSafeAfterMove(x, y, newX, newY))
                 pieceSafeSquares.push({ x: newX, y: newY });
 
               if (newPiece !== null) break;
@@ -239,8 +247,8 @@ export class ChessBoard {
 
     if (!kingSideCastle && this.chessBoard[kingPositionX][1]) return false;
 
-    return this.isPositionSafeAfterMove(king, kingPositionX, kingPositionY, kingPositionX, firstNextKingPositionY)
-      && this.isPositionSafeAfterMove(king, kingPositionX, kingPositionY, kingPositionX, secondNextKingPositionY);
+    return this.isPositionSafeAfterMove(kingPositionX, kingPositionY, kingPositionX, firstNextKingPositionY)
+      && this.isPositionSafeAfterMove(kingPositionX, kingPositionY, kingPositionX, secondNextKingPositionY);
   }
 
   private canCaptureEnPassant(pawn: Pawn, pawnX: number, pawnY: number): boolean {
@@ -259,7 +267,7 @@ export class ChessBoard {
     const pawnNewPositionY = currY;
 
     this.chessBoard[currX][currY] = null;
-    const isPositionSafe = this.isPositionSafeAfterMove(pawn, pawnX, pawnY, pawnNewPositionX, pawnNewPositionY);
+    const isPositionSafe = this.isPositionSafeAfterMove(pawnX, pawnY, pawnNewPositionX, pawnNewPositionY);
     this.chessBoard[currX][currY] = piece;
 
     return isPositionSafe;
@@ -288,5 +296,13 @@ export class ChessBoard {
     ) {
       this.chessBoard[this.lastMove.currX][this.lastMove.currY] = null;
     }
+  }
+
+  private promotedPiece(promotedPieceType: FENChar): Knight | Bishop | Rook | Queen {
+    if ([FENChar.WhiteKnight, FENChar.BlackKnight].includes(promotedPieceType)) return new Knight(this.playerColor);
+    if ([FENChar.WhiteBishop, FENChar.BlackBishop].includes(promotedPieceType)) return new Bishop(this.playerColor);
+    if ([FENChar.WhiteRook, FENChar.BlackRook].includes(promotedPieceType)) return new Rook(this.playerColor);
+    if ([FENChar.WhiteQueen, FENChar.BlackQueen].includes(promotedPieceType)) return new Queen(this.playerColor);
+    return new Queen(this.playerColor);
   }
 }
